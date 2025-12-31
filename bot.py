@@ -1,5 +1,6 @@
 import time
 import logging
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -18,11 +19,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------- تنظیمات ----------
-BOT_TOKEN = "8490706967:AAH0Sqrtz9Nfn1AG5EBaeoMr7cotZ_ioeW8"
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # توکن از Railway Variables
 
 REQUIRED_CHANNELS = [
-    ("Grey_Grimoire", "گریمور خاکستری "),
-    ("akharin_mahfel", " مدرسه آوانیس"),
+    ("Grey_Grimoire", "گریمور خاکستری"),
+    ("akharin_mahfel", "مدرسه آوانیس"),
     ("MAZUL_TIME", "مازول تایم"),
 ]
 
@@ -36,7 +37,7 @@ async def is_user_member(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bo
             member = await context.bot.get_chat_member(f"@{channel}", user_id)
             if member.status not in ("member", "administrator", "creator"):
                 return False
-        except:
+        except Exception:
             return False
     return True
 
@@ -122,7 +123,6 @@ async def handle_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_cooldowns[user.id] = now
 
     tg_link = f"tg://user?id={text}"
-
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔍 پیدا شد", url=tg_link)]
     ])
@@ -143,15 +143,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "آیدی عددی بفرست تا لینک چت ساخته بشه"
     )
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.error(context.error)
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logger.error("Exception while handling an update:", exc_info=context.error)
 
 def main():
-    app = (
-        ApplicationBuilder()
-        .token(BOT_TOKEN)
-        .build()
-    )
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is not set")
+
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
